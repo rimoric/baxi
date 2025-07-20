@@ -1409,6 +1409,26 @@
             color: #1f2937;
         }
 
+        /* REGOLA GLOBALE: Rimozione sfondo su TUTTI i dispositivi mobile */
+        @media (max-width: 767px) {
+            .planimetria {
+                background-image: none !important;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+                background-size: auto !important;
+                background-repeat: no-repeat !important;
+                background-position: initial !important;
+                background-attachment: initial !important;
+                transform: none !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            /* Override anche per eventuali regole CSS inline */
+            .main-area .planimetria {
+                background-image: none !important;
+            }
+        }
+
         /* Controllo visibilità layout Desktop/Mobile */
         .desktop-only {
             display: block;
@@ -1457,7 +1477,7 @@
                 font-size: 14px;
             }
 
-            /* Planimetria mobile - SENZA sfondo */
+            /* Planimetria mobile - SENZA sfondo - FORZA rimozione */
             .main-area {
                 position: relative;
                 overflow: auto;
@@ -1467,16 +1487,29 @@
 
             .planimetria {
                 position: relative;
-                width: 100%;
-                height: 100%;
+                width: 100% !important;
+                height: 100% !important;
                 min-height: 100vh;
-                /* RIMUOVI background-image su mobile */
+                /* FORZA rimozione background-image su mobile */
                 background-image: none !important;
-                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+                background-size: auto !important;
+                background-repeat: no-repeat !important;
+                background-position: initial !important;
+                background-attachment: initial !important;
+                /* FORZA rimozione transform */
+                transform: none !important;
                 display: flex;
                 flex-direction: column;
                 justify-content: flex-start;
                 padding: 20px 15px;
+            }
+
+            /* FORZA override per tutti gli elementi planimetria su mobile */
+            .mobile-only .planimetria,
+            .planimetria .mobile-only {
+                background-image: none !important;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
             }
 
             /* Header mobile per sostituire l'immagine */
@@ -1703,6 +1736,20 @@
                 display: flex !important;
             }
 
+            /* FORZA rimozione sfondo anche su landscape */
+            .planimetria {
+                background-image: none !important;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+                background-size: auto !important;
+                background-position: initial !important;
+                background-repeat: no-repeat !important;
+                padding: 30px 20px;
+                transform: none !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100vh;
+            }
+
             .menu-bar {
                 padding: 10px 16px;
                 gap: 8px;
@@ -1714,14 +1761,8 @@
                 font-size: 13px;
             }
 
-            .planimetria {
-                background-size: contain;
-                background-position: center top;
-                padding: 30px 20px;
-            }
-
             .mobile-buttons-container {
-                margin-top: 60px;
+                margin-top: 0;
                 gap: 25px;
             }
 
