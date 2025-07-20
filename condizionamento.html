@@ -1409,12 +1409,30 @@
             color: #1f2937;
         }
 
+        /* Controllo visibilità layout Desktop/Mobile */
+        .desktop-only {
+            display: block;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
         /* =============================================== */
         /* RESPONSIVE DESIGN MOBILE-FIRST */
         /* =============================================== */
 
         /* Mobile Portrait (320px - 479px) */
         @media (max-width: 479px) {
+            /* Inverti visibilità layout */
+            .desktop-only {
+                display: none !important;
+            }
+
+            .mobile-only {
+                display: flex !important;
+            }
+
             .dashboard-container {
                 height: 100vh;
                 height: 100dvh; /* Dynamic viewport height per mobile */
@@ -1444,27 +1462,94 @@
                 position: relative;
                 overflow: auto;
                 -webkit-overflow-scrolling: touch;
+                background: #f0f8ff;
             }
 
             .planimetria {
-                transform: scale(0.4);
-                transform-origin: top left;
-                width: 250%; /* Compenso per lo scale */
-                height: 250%;
-                min-height: 600px;
+                position: relative;
+                width: 100%;
+                height: 100%;
+                min-height: 100vh;
+                background-image: url('Astec.png');
+                background-size: cover; /* Copre tutto il container */
+                background-repeat: no-repeat;
+                background-position: center top;
+                background-attachment: local;
+                /* Rimuovi transform che causava problemi */
+                transform: none;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                padding: 20px 10px;
+            }
+
+            /* Container per i pulsanti su mobile */
+            .mobile-buttons-container {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                margin-top: 40px;
+                z-index: 10;
+                position: relative;
+            }
+
+            /* Riga di pulsanti */
+            .mobile-buttons-row {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                padding: 0 10px;
             }
 
             .locale-button {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                border: 2px solid rgba(255,255,255,0.8);
+                position: relative !important; /* Override position absolute */
+                width: 80px;
+                height: 80px;
+                font-size: 24px;
+                border-radius: 16px;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                border: 3px solid rgba(255,255,255,0.9);
+                background: linear-gradient(135deg, #0075ff, #0056cc);
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                top: auto !important;
+                left: auto !important;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
             }
 
-            .locale-button:hover {
-                transform: scale(1.2);
+            .locale-button::after {
+                content: attr(data-short-name);
+                font-size: 10px;
+                font-weight: 600;
+                opacity: 0.9;
+                text-align: center;
+                line-height: 1.1;
+                max-width: 70px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .locale-button:hover,
+            .locale-button:active {
+                transform: scale(1.1);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            }
+
+            .locale-button.manual-active {
+                background: linear-gradient(135deg, #ff6b6b, #ff4757);
+                border-color: rgba(255,255,255,0.9);
+            }
+
+            .locale-button.auto-active {
+                background: linear-gradient(135deg, #4ecdc4, #26de81);
+                border-color: rgba(255,255,255,0.9);
             }
 
             /* Status bar mobile */
@@ -1566,6 +1651,15 @@
 
         /* Mobile Landscape (480px - 767px) */
         @media (min-width: 480px) and (max-width: 767px) {
+            /* Inverti visibilità layout */
+            .desktop-only {
+                display: none !important;
+            }
+
+            .mobile-only {
+                display: flex !important;
+            }
+
             .menu-bar {
                 padding: 10px 16px;
                 gap: 8px;
@@ -1578,16 +1672,24 @@
             }
 
             .planimetria {
-                transform: scale(0.5);
-                transform-origin: top left;
-                width: 200%;
-                height: 200%;
+                background-size: contain;
+                background-position: center top;
+                padding: 30px 20px;
+            }
+
+            .mobile-buttons-container {
+                margin-top: 60px;
+                gap: 25px;
             }
 
             .locale-button {
-                width: 36px;
-                height: 36px;
-                font-size: 18px;
+                width: 90px;
+                height: 90px;
+                font-size: 28px;
+            }
+
+            .mobile-buttons-row {
+                gap: 20px;
             }
 
             .temporizzatore-dialog {
@@ -1603,11 +1705,22 @@
 
         /* Tablet Portrait (768px - 1023px) */
         @media (min-width: 768px) and (max-width: 1023px) {
+            /* Mantieni layout desktop ma con scala ridotta */
+            .desktop-only {
+                display: block !important;
+            }
+
+            .mobile-only {
+                display: none !important;
+            }
+
             .planimetria {
                 transform: scale(0.7);
                 transform-origin: top left;
                 width: 143%;
                 height: 143%;
+                background-size: contain;
+                background-position: center;
             }
             
             .locale-button {
@@ -1624,11 +1737,22 @@
 
         /* Desktop (1024px+) */
         @media (min-width: 1024px) {
+            /* Layout desktop normale */
+            .desktop-only {
+                display: block !important;
+            }
+
+            .mobile-only {
+                display: none !important;
+            }
+
             .planimetria {
                 transform: scale(0.85);
                 transform-origin: top left;
                 width: 118%;
                 height: 118%;
+                background-size: contain;
+                background-position: center;
             }
             
             .locale-button {
@@ -2073,18 +2197,46 @@
         <!-- Area principale con planimetria -->
         <div class="main-area">
             <div class="planimetria">
-                <!-- Pulsanti per ogni locale -->
-                <button class="locale-button btn-loc01-2" data-locale="Loc. 1, 2: Atrio" onclick="openLocalSettings(1)"></button>
-                <button class="locale-button btn-loc05" data-locale="Loc. 5: Disimpegno" onclick="openLocalSettings(5)"></button>
-                <button class="locale-button btn-loc07" data-locale="Loc. 7: Aula Didattica 1" onclick="openLocalSettings(7)"></button>
-                <button class="locale-button btn-loc10" data-locale="Loc. 10: Aula Didattica 2" onclick="openLocalSettings(10)"></button>
-                <button class="locale-button btn-loc11" data-locale="Loc. 11: Ufficio" onclick="openLocalSettings(11)"></button>
-                <button class="locale-button btn-loc13" data-locale="Loc. 13: Corridoio" onclick="openLocalSettings(13)"></button>
-                <button class="locale-button btn-sala-convegno" data-locale="Sala Convegni" onclick="openLocalSettings(30)"></button>
-                <button class="locale-button btn-loc19" data-locale="Loc. 19: Ufficio" onclick="openLocalSettings(19)"></button>
-                <button class="locale-button btn-loc20" data-locale="Loc. 20: Ufficio" onclick="openLocalSettings(20)"></button>
-                <button class="locale-button btn-loc21" data-locale="Loc. 21: Conferenza" onclick="openLocalSettings(21)"></button>
-                <button class="locale-button btn-loc22" data-locale="Loc. 22: Aula Didattica H.T." onclick="openLocalSettings(22)"></button>
+                <!-- Layout Desktop - Pulsanti posizionati assoluti (nascosti su mobile) -->
+                <div class="desktop-layout">
+                    <button class="locale-button btn-loc01-2 desktop-only" data-locale="Loc. 1, 2: Atrio" onclick="openLocalSettings(1)"></button>
+                    <button class="locale-button btn-loc05 desktop-only" data-locale="Loc. 5: Disimpegno" onclick="openLocalSettings(5)"></button>
+                    <button class="locale-button btn-loc07 desktop-only" data-locale="Loc. 7: Aula Didattica 1" onclick="openLocalSettings(7)"></button>
+                    <button class="locale-button btn-loc10 desktop-only" data-locale="Loc. 10: Aula Didattica 2" onclick="openLocalSettings(10)"></button>
+                    <button class="locale-button btn-loc11 desktop-only" data-locale="Loc. 11: Ufficio" onclick="openLocalSettings(11)"></button>
+                    <button class="locale-button btn-loc13 desktop-only" data-locale="Loc. 13: Corridoio" onclick="openLocalSettings(13)"></button>
+                    <button class="locale-button btn-sala-convegno desktop-only" data-locale="Sala Convegni" onclick="openLocalSettings(30)"></button>
+                    <button class="locale-button btn-loc19 desktop-only" data-locale="Loc. 19: Ufficio" onclick="openLocalSettings(19)"></button>
+                    <button class="locale-button btn-loc20 desktop-only" data-locale="Loc. 20: Ufficio" onclick="openLocalSettings(20)"></button>
+                    <button class="locale-button btn-loc21 desktop-only" data-locale="Loc. 21: Conferenza" onclick="openLocalSettings(21)"></button>
+                    <button class="locale-button btn-loc22 desktop-only" data-locale="Loc. 22: Aula Didattica H.T." onclick="openLocalSettings(22)"></button>
+                </div>
+
+                <!-- Layout Mobile - Griglia di pulsanti (visibile solo su mobile) -->
+                <div class="mobile-buttons-container mobile-only">
+                    <div class="mobile-buttons-row">
+                        <button class="locale-button" data-short-name="Atrio" onclick="openLocalSettings(1)">🚪</button>
+                        <button class="locale-button" data-short-name="Disimpegno" onclick="openLocalSettings(5)">↔️</button>
+                        <button class="locale-button" data-short-name="Aula Did. 1" onclick="openLocalSettings(7)">🎓</button>
+                    </div>
+                    
+                    <div class="mobile-buttons-row">
+                        <button class="locale-button" data-short-name="Aula Did. 2" onclick="openLocalSettings(10)">🎓</button>
+                        <button class="locale-button" data-short-name="Ufficio 11" onclick="openLocalSettings(11)">💼</button>
+                        <button class="locale-button" data-short-name="Corridoio" onclick="openLocalSettings(13)">🚶</button>
+                    </div>
+                    
+                    <div class="mobile-buttons-row">
+                        <button class="locale-button" data-short-name="Sala Conv." onclick="openLocalSettings(30)">👥</button>
+                        <button class="locale-button" data-short-name="Ufficio 19" onclick="openLocalSettings(19)">💼</button>
+                        <button class="locale-button" data-short-name="Ufficio 20" onclick="openLocalSettings(20)">💼</button>
+                    </div>
+                    
+                    <div class="mobile-buttons-row">
+                        <button class="locale-button" data-short-name="Conferenza" onclick="openLocalSettings(21)">🎤</button>
+                        <button class="locale-button" data-short-name="Aula H.T." onclick="openLocalSettings(22)">🎓</button>
+                    </div>
+                </div>
             </div>
         </div>
 
