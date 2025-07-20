@@ -1409,91 +1409,653 @@
             color: #1f2937;
         }
 
-        @media (max-width: 1024px) {
-            .planimetria {
-                transform: scale(0.8);
-                transform-origin: top left;
+        /* =============================================== */
+        /* RESPONSIVE DESIGN MOBILE-FIRST */
+        /* =============================================== */
+
+        /* Mobile Portrait (320px - 479px) */
+        @media (max-width: 479px) {
+            .dashboard-container {
+                height: 100vh;
+                height: 100dvh; /* Dynamic viewport height per mobile */
             }
-            
-            .locale-button {
-                width: 28px;
-                height: 28px;
+
+            .menu-bar {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+                justify-content: center;
+            }
+
+            .menu-item {
+                padding: 8px 16px;
+                font-size: 12px;
+                min-width: 100px;
+                flex: 1;
+                max-width: 150px;
+            }
+
+            .menu-item::before {
                 font-size: 14px;
+            }
+
+            /* Planimetria mobile */
+            .main-area {
+                position: relative;
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .planimetria {
+                transform: scale(0.4);
+                transform-origin: top left;
+                width: 250%; /* Compenso per lo scale */
+                height: 250%;
+                min-height: 600px;
+            }
+
+            .locale-button {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                border: 2px solid rgba(255,255,255,0.8);
+            }
+
+            .locale-button:hover {
+                transform: scale(1.2);
+            }
+
+            /* Status bar mobile */
+            .status-bar {
+                padding: 8px 12px;
+                font-size: 11px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .connection-status {
+                flex: 1;
+                min-width: 150px;
+            }
+
+            .datetime-display {
+                flex-direction: column;
+                gap: 4px;
+                text-align: right;
+            }
+
+            /* Diagnostica mobile */
+            .diagnostics {
+                position: fixed;
+                top: auto;
+                bottom: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                padding: 8px;
+                font-size: 10px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+            }
+
+            .diagnostics h4 {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            /* Dialog temporizzatore mobile */
+            .temporizzatore-dialog {
+                width: 95vw;
+                max-width: 350px;
+                margin: 10px;
+            }
+
+            .dialog-body {
+                padding: 20px 15px;
+            }
+
+            .dialog-button {
+                min-width: 120px;
+                padding: 12px 20px;
+                font-size: 13px;
+            }
+
+            .checkbox-option {
+                padding: 12px 16px;
+                margin: 16px 0;
+            }
+
+            /* Info dialog mobile */
+            .info-dialog {
+                width: 95vw;
+                margin: 10px;
+                max-height: 90vh;
+                border-radius: 16px;
+            }
+
+            .info-header {
+                padding: 24px 20px 20px;
+            }
+
+            .info-logo {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+
+            .info-title {
+                font-size: 20px;
+            }
+
+            .info-subtitle {
+                font-size: 14px;
+            }
+
+            .info-body {
+                padding: 16px 20px;
+            }
+
+            .contact-item {
+                font-size: 13px;
+                margin-bottom: 8px;
             }
         }
 
-        @media (max-width: 768px) {
+        /* Mobile Landscape (480px - 767px) */
+        @media (min-width: 480px) and (max-width: 767px) {
             .menu-bar {
-                flex-wrap: wrap;
-                gap: 10px;
+                padding: 10px 16px;
+                gap: 8px;
             }
-            
+
+            .menu-item {
+                min-width: 110px;
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+
             .planimetria {
-                transform: scale(0.6);
+                transform: scale(0.5);
+                transform-origin: top left;
+                width: 200%;
+                height: 200%;
+            }
+
+            .locale-button {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .temporizzatore-dialog {
+                width: 90vw;
+                max-width: 400px;
+            }
+
+            .info-dialog {
+                width: 90vw;
+                max-width: 500px;
+            }
+        }
+
+        /* Tablet Portrait (768px - 1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .planimetria {
+                transform: scale(0.7);
+                transform-origin: top left;
+                width: 143%;
+                height: 143%;
             }
             
             .locale-button {
-                width: 24px;
-                height: 24px;
-                font-size: 12px;
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
             }
 
+            .temporizzatore-dialog {
+                width: 80vw;
+                max-width: 450px;
+            }
+        }
+
+        /* Desktop (1024px+) */
+        @media (min-width: 1024px) {
+            .planimetria {
+                transform: scale(0.85);
+                transform-origin: top left;
+                width: 118%;
+                height: 118%;
+            }
+            
+            .locale-button {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+        }
+
+        /* =============================================== */
+        /* MOBILE RESPONSIVE PER DIALOG ORARI */
+        /* =============================================== */
+
+        @media (max-width: 768px) {
             .orari-dialog {
-                padding: 20px;
-                margin: 10px;
-                border-radius: 20px;
+                width: 100vw;
+                height: 100vh;
+                max-width: none;
+                max-height: none;
+                padding: 16px;
+                margin: 0;
+                border-radius: 0;
+                overflow-y: auto;
+            }
+
+            .orari-header {
+                margin-bottom: 20px;
+                padding-bottom: 16px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
             }
 
             .orari-title {
-                font-size: 24px;
+                font-size: 22px;
+            }
+
+            .locale-info {
+                font-size: 12px;
+                order: -1;
+            }
+
+            .close-btn {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+            }
+
+            .period-tabs {
+                flex-direction: column;
+                gap: 8px;
+                padding: 8px;
+                margin-bottom: 20px;
+            }
+
+            .period-tab {
+                padding: 14px 16px;
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .period-tab::before {
+                display: none;
             }
 
             .days-grid {
                 grid-template-columns: 1fr;
                 gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .day-card {
+                padding: 16px;
+            }
+
+            .day-name {
+                font-size: 16px;
+            }
+
+            .time-input {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .copy-controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .copy-btn {
+                padding: 10px 16px;
+                font-size: 11px;
+                width: 100%;
+                justify-content: center;
             }
 
             .dialog-actions {
                 flex-direction: column;
+                gap: 12px;
+                padding-top: 20px;
+                position: sticky;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                margin: 0 -16px -16px;
+                padding: 16px;
             }
 
             .btn {
                 width: 100%;
+                padding: 16px;
+                font-size: 16px;
             }
 
-            /* Mobile responsive per calendario */
+            .loading {
+                justify-content: center;
+                margin-bottom: 12px;
+            }
+        }
+
+        /* =============================================== */
+        /* MOBILE RESPONSIVE PER DIALOG CALENDARIO */
+        /* =============================================== */
+
+        @media (max-width: 768px) {
             .dialog-container {
                 width: 100vw;
                 height: 100vh;
                 max-width: none;
                 max-height: none;
                 border-radius: 0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                transform: none;
+            }
+
+            .calendar-dialog-header {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+                position: relative;
+            }
+
+            .calendar-dialog-title {
+                font-size: 20px;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .locale-badge {
+                font-size: 12px;
+            }
+
+            .calendar-close-btn {
+                position: absolute;
+                top: 16px;
+                right: 16px;
             }
 
             .calendar-dialog-body {
                 padding: 16px;
-                max-height: calc(100vh - 160px);
-            }
-
-            .calendar-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
+                max-height: calc(100vh - 200px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .controls-bar {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
+                padding: 16px;
+            }
+
+            .preset-buttons {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .preset-btn {
+                flex: 1;
+                min-width: 120px;
+                padding: 12px 16px;
+                font-size: 13px;
             }
 
             .stats-display {
                 margin-left: 0;
                 justify-content: center;
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+
+            .stat-item {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .year-nav {
+                margin-bottom: 24px;
+                gap: 20px;
+            }
+
+            .year-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+
+            .year-display {
+                font-size: 24px;
+            }
+
+            .calendar-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .month-card {
+                padding: 16px;
+            }
+
+            .month-name {
+                font-size: 16px;
+            }
+
+            .day-cell {
+                font-size: 13px;
+                aspect-ratio: 1;
+                min-height: 35px;
+            }
+
+            .day-label {
+                font-size: 10px;
+                padding: 6px 2px;
+            }
+
+            .calendar-dialog-footer {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 12px;
+                position: sticky;
+                bottom: 0;
+                background: rgba(248, 250, 252, 0.95);
+                backdrop-filter: blur(10px);
+            }
+
+            .footer-info {
+                text-align: center;
+                font-size: 12px;
+                order: 1;
             }
 
             .footer-buttons {
                 flex-direction: column;
                 width: 100%;
+                gap: 8px;
+                order: 0;
+            }
+
+            .footer-buttons .btn {
+                width: 100%;
+                padding: 16px;
+                font-size: 16px;
+            }
+        }
+
+        /* =============================================== */
+        /* MIGLIORAMENTI TOUCH E INTERAZIONI MOBILE */
+        /* =============================================== */
+
+        @media (max-width: 768px) {
+            /* Miglioramento touch targets */
+            .locale-button,
+            .menu-item,
+            .day-cell,
+            .preset-btn,
+            .btn,
+            .toggle-slider {
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+            }
+
+            /* Scroll smooth per mobile */
+            .main-area,
+            .calendar-dialog-body,
+            .orari-dialog {
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Tooltip disabilitati su mobile */
+            .locale-button::after {
+                display: none;
+            }
+
+            /* Toast più grandi su mobile */
+            .toast {
+                position: fixed;
+                top: auto;
+                bottom: 20px;
+                right: 16px;
+                left: 16px;
+                transform: translateY(100px);
+                max-width: none;
+                padding: 16px 20px;
+                font-size: 14px;
+                border-radius: 12px;
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+
+            /* Miglioramenti per input time su mobile */
+            .time-input {
+                -webkit-appearance: none;
+                -moz-appearance: textfield;
+                font-size: 16px; /* Previene zoom su iOS */
+            }
+
+            /* Miglioramenti checkbox */
+            .checkbox-option input[type="checkbox"] {
+                width: 24px;
+                height: 24px;
+                -webkit-appearance: none;
+                appearance: none;
+                border: 2px solid #ff9800;
+                border-radius: 4px;
+                background: white;
+                position: relative;
+                cursor: pointer;
+            }
+
+            .checkbox-option input[type="checkbox"]:checked {
+                background: #ff9800;
+            }
+
+            .checkbox-option input[type="checkbox"]:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-weight: bold;
+                font-size: 14px;
+            }
+        }
+
+        /* =============================================== */
+        /* LANDSCAPE MOBILE OTTIMIZZAZIONI */
+        /* =============================================== */
+
+        @media (max-width: 768px) and (orientation: landscape) {
+            .dashboard-container {
+                height: 100vh;
+                height: 100dvh;
+            }
+
+            .menu-bar {
+                padding: 6px 12px;
+            }
+
+            .menu-item {
+                padding: 6px 12px;
+                font-size: 11px;
+                min-width: 80px;
+            }
+
+            .status-bar {
+                padding: 4px 12px;
+                font-size: 10px;
+            }
+
+            .diagnostics {
+                bottom: 50px;
+                font-size: 9px;
+                padding: 6px;
+            }
+
+            .planimetria {
+                transform: scale(0.5);
+            }
+
+            .locale-button {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            /* Dialog orari landscape */
+            .orari-dialog {
+                padding: 12px;
+            }
+
+            .orari-header {
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+            }
+
+            .orari-title {
+                font-size: 20px;
+            }
+
+            .days-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .day-card {
+                padding: 12px;
+            }
+
+            /* Dialog calendario landscape */
+            .calendar-dialog-body {
+                max-height: calc(100vh - 160px);
+            }
+
+            .calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .month-card {
+                padding: 12px;
             }
         }
     </style>
