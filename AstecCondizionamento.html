@@ -1,0 +1,3230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTEC - Controllo Condizionamento</title>
+    <style>
+        /* Reset e base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+
+        /* Layout principale */
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Menu superiore moderno */
+        .menu-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            padding: 12px 24px;
+            display: flex;
+            gap: 8px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .menu-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-item:hover::before {
+            opacity: 1;
+        }
+
+        .menu-item:active {
+            transform: translateY(0);
+        }
+
+        /* Icone per menu items */
+        .menu-item.exit::before { content: '🚪'; margin-right: 8px; }
+        .menu-item.sync::before { content: '🔄'; margin-right: 8px; }
+        .menu-item.holidays::before { content: '📅'; margin-right: 8px; }
+        .menu-item.info::before { content: 'ℹ️'; margin-right: 8px; }
+
+        /* Area centrale con planimetria */
+        .main-area {
+            flex: 1;
+            position: relative;
+            background: white;
+            overflow: hidden;
+        }
+
+        .planimetria {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-image: url('Astec.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #f0f8ff;
+        }
+
+        /* Rimuovi placeholder quando c'è l'immagine */
+        .planimetria::before,
+        .planimetria::after {
+            display: none;
+        }
+
+        /* Pulsanti per locali */
+        .locale-button {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background: #0075ff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .locale-button::before {
+            content: '🏠';
+        }
+
+        /* Simboli specifici per tipo di locale */
+        .btn-loc01-2::before { content: '🚪'; } /* Atrio */
+        .btn-loc05::before { content: '↔️'; } /* Disimpegno */
+        .btn-loc07::before, .btn-loc10::before, .btn-loc22::before { content: '🎓'; } /* Aule Didattiche */
+        .btn-loc11::before, .btn-loc20::before, .btn-loc19::before { content: '💼'; } /* Uffici */
+        .btn-loc13::before { content: '🚶'; } /* Corridoio */
+        .btn-sala-convegno::before { content: '👥'; } /* Sala Convegni */
+        .btn-loc21::before { content: '🎤'; } /* Conferenza */
+
+        .locale-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .locale-button.manual-active {
+            background-color: #ff6b6b;
+            border: 2px solid #ff4757;
+        }
+
+        .locale-button.auto-active {
+            background-color: #4ecdc4;
+            border: 2px solid #26de81;
+        }
+
+        /* Posizioni dei pulsanti con spostamenti specifici - centrati per dimensioni 32x32 */
+        .btn-loc01-2 { top: 506px; left: 296px; } /* Atrio - spostato 10px verso l'alto */
+        .btn-loc05 { top: 306px; left: 636px; } /* Disimpegno - centrato */
+        .btn-loc07 { top: 196px; left: 486px; } /* Aula Didattica 1 - centrato */
+        .btn-loc10 { top: 196px; left: 706px; } /* Aula Didattica 2 - centrato */
+        .btn-loc11 { top: 296px; left: 996px; } /* Ufficio - centrato */
+        .btn-loc13 { top: 426px; left: 1046px; } /* Corridoio - centrato */
+        .btn-sala-convegno { top: 320px; left: 207px; } /* Sala Convegni - centrato */
+        .btn-loc19 { top: 506px; left: 1046px; } /* Ufficio - centrato */
+        .btn-loc20 { top: 506px; left: 896px; } /* Ufficio - centrato */
+        .btn-loc21 { top: 416px; left: 736px; } /* Conferenza - centrato */
+        .btn-loc22 { top: 416px; left: 566px; } /* Aula Didattica H.T. - centrato */
+
+        /* Barra di stato inferiore */
+        .status-bar {
+            background: linear-gradient(135deg, #3333ff, #4444ff);
+            color: #ffff66;
+            padding: 3px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-top: 1px solid #999;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ff4757;
+            transition: background-color 0.3s;
+        }
+
+        .status-indicator.connected {
+            background-color: #26de81;
+        }
+
+        .datetime-display {
+            display: flex;
+            gap: 20px;
+        }
+
+        /* Tooltip per i pulsanti */
+        .locale-button::after {
+            content: attr(data-locale);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 1000;
+        }
+
+        .locale-button:hover::after {
+            opacity: 1;
+        }
+
+        /* Diagnostica */
+        .diagnostics {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 200px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .diagnostics h4 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .diagnostic-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .diagnostic-value {
+            font-weight: bold;
+        }
+
+        /* Modal base per tutti i dialog */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border: 3px solid #0033ff;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Dialog Temporizzatore - Layout migliorato */
+        .temporizzatore-dialog {
+            width: 320px;
+            background: linear-gradient(135deg, #0033ff, #0044ff);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .dialog-header {
+            background: linear-gradient(135deg, #0033ff, #0044ff);
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 10px rgba(0,51,255,0.3);
+        }
+
+        .dialog-body {
+            background: linear-gradient(135deg, #f8fffe, #e8f5f3);
+            padding: 30px 25px;
+            border: none;
+        }
+
+        .dialog-footer {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 16px 20px;
+            text-align: center;
+            border-top: 1px solid #90caf9;
+        }
+
+        .dialog-option {
+            margin: 25px 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dialog-button {
+            background: linear-gradient(135deg, #ffffff, #f5f5f5);
+            border: 2px solid #e0e0e0;
+            padding: 14px 24px;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .dialog-button:hover {
+            background: linear-gradient(135deg, #f0f8ff, #e3f2fd);
+            border-color: #2196f3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33,150,243,0.3);
+        }
+
+        .dialog-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-radius: 10px;
+            border: 2px solid #ffcc02;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.2);
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ff9800;
+        }
+
+        .checkbox-option label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e65100;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-option label::before {
+            content: '⚙️';
+            font-size: 18px;
+        }
+
+        /* Dialog Informazioni Moderno */
+        .info-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .info-modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .info-dialog {
+            background: white;
+            border-radius: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .info-modal.show .info-dialog {
+            transform: scale(1) translateY(0);
+        }
+
+        .info-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 32px 24px;
+            text-align: center;
+            position: relative;
+        }
+
+        .info-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .info-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .info-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .info-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .info-body {
+            padding: 24px 32px;
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section h3 {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-section p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-version {
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .info-version .version-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .info-version .version-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .info-contact {
+            background: linear-gradient(135deg, #fef3e2, #fde68a);
+            padding: 16px;
+            border-radius: 16px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+            color: #92400e;
+            font-size: 14px;
+        }
+
+        .contact-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .contact-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .info-footer {
+            padding: 20px 32px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .info-footer button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .info-footer button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        /* =============================================== */
+        /* DIALOG ORARI SETTIMANALI STYLES */
+        /* =============================================== */
+
+        /* Modal Overlay Base */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            display: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dialog Container */
+        .orari-dialog {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active .orari-dialog {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Header */
+        .orari-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(103, 126, 234, 0.1);
+        }
+
+        .orari-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .locale-info {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Period Tabs */
+        .period-tabs {
+            display: flex;
+            background: rgba(103, 126, 234, 0.1);
+            border-radius: 16px;
+            padding: 6px;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+
+        .period-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .period-tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .period-tab::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .period-tab[data-period="mattina"]::before {
+            background: #fbbf24;
+        }
+
+        .period-tab[data-period="pomeriggio"]::before {
+            background: #f97316;
+        }
+
+        .period-tab[data-period="sera"]::before {
+            background: #8b5cf6;
+        }
+
+        .period-tab.active::before {
+            opacity: 1;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        /* Period Content */
+        .period-content {
+            display: none;
+        }
+
+        .period-content.active {
+            display: block;
+        }
+
+        /* Days Grid */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        /* Day Card */
+        .day-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .day-card.enabled::before {
+            transform: scaleX(1);
+        }
+
+        .day-card.enabled {
+            border-color: rgba(103, 126, 234, 0.2);
+            box-shadow: 0 8px 25px rgba(103, 126, 234, 0.15);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .day-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #e5e7eb;
+            border-radius: 26px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .toggle-input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+        }
+
+        /* Time Inputs */
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .day-card.enabled .time-inputs {
+            opacity: 1;
+        }
+
+        .time-group {
+            position: relative;
+        }
+
+        .time-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            background: #f9fafb;
+            transition: all 0.2s ease;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(103, 126, 234, 0.1);
+        }
+
+        .time-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Copy Controls */
+        .copy-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            border: none;
+            background: rgba(103, 126, 234, 0.1);
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(103, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Action Buttons */
+        .dialog-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding-top: 24px;
+            border-top: 2px solid rgba(103, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(103, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(103, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* =============================================== */
+        /* DIALOG CALENDARIO ESCLUSIONI STYLES */
+        /* =============================================== */
+
+        /* Dialog Overlay Calendario */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dialog-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dialog Container Calendario */
+        .dialog-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 95vw;
+            max-width: 1200px;
+            max-height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dialog-overlay.active .dialog-container {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Header Calendario */
+        .calendar-dialog-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-dialog-title {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .locale-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .calendar-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Dialog Body Calendario */
+        .calendar-dialog-body {
+            padding: 32px;
+            max-height: calc(90vh - 200px);
+            overflow-y: auto;
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 16px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .preset-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            color: #475569;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preset-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .stats-display {
+            margin-left: auto;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .stat-dot.excluded { 
+            background: #ef4444; 
+        }
+
+        .stat-dot.weekend { 
+            background: #3b82f6; 
+        }
+
+        /* Year Navigation */
+        .year-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .year-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-size: 20px;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .year-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .year-display {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /* Month Card */
+        .month-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 2px solid #f1f5f9;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .month-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .month-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .month-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .month-progress {
+            width: 60px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Days Grid */
+        .days-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 8px;
+        }
+
+        .day-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            padding: 8px 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .calendar-days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .day-cell.weekend {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .day-cell.excluded {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 2px solid #ef4444;
+        }
+
+        .day-cell.excluded.weekend {
+            background: #fbbf24;
+            color: #92400e;
+            border: 2px solid #f59e0b;
+        }
+
+        .day-cell.today {
+            border: 2px solid #667eea;
+            font-weight: 700;
+        }
+
+        .day-cell.empty {
+            cursor: default;
+            color: transparent;
+            background: transparent;
+        }
+
+        .day-cell.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Footer Calendario */
+        .calendar-dialog-footer {
+            padding: 24px 32px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .footer-info {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #10b981;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        @media (max-width: 1024px) {
+            .planimetria {
+                transform: scale(0.8);
+                transform-origin: top left;
+            }
+            
+            .locale-button {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .menu-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .planimetria {
+                transform: scale(0.6);
+            }
+            
+            .locale-button {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+
+            .orari-dialog {
+                padding: 20px;
+                margin: 10px;
+                border-radius: 20px;
+            }
+
+            .orari-title {
+                font-size: 24px;
+            }
+
+            .days-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .dialog-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            /* Mobile responsive per calendario */
+            .dialog-container {
+                width: 100vw;
+                height: 100vh;
+                max-width: none;
+                max-height: none;
+                border-radius: 0;
+            }
+
+            .calendar-dialog-body {
+                padding: 16px;
+                max-height: calc(100vh - 160px);
+            }
+
+            .calendar-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .controls-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .stats-display {
+                margin-left: 0;
+                justify-content: center;
+            }
+
+            .footer-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Menu superiore moderno -->
+        <div class="menu-bar">
+            <button class="menu-item exit" onclick="exitApplication()">Uscita</button>
+            <button class="menu-item sync" onclick="syncDateTime()">Sincronizzazione</button>
+            <button class="menu-item holidays" onclick="openHolidays()">Ferie</button>
+            <button class="menu-item info" onclick="showInfo()">Informazioni</button>
+        </div>
+
+        <!-- Area principale con planimetria -->
+        <div class="main-area">
+            <div class="planimetria">
+                <!-- Pulsanti per ogni locale -->
+                <button class="locale-button btn-loc01-2" data-locale="Loc. 1, 2: Atrio" onclick="openLocalSettings(1)"></button>
+                <button class="locale-button btn-loc05" data-locale="Loc. 5: Disimpegno" onclick="openLocalSettings(5)"></button>
+                <button class="locale-button btn-loc07" data-locale="Loc. 7: Aula Didattica 1" onclick="openLocalSettings(7)"></button>
+                <button class="locale-button btn-loc10" data-locale="Loc. 10: Aula Didattica 2" onclick="openLocalSettings(10)"></button>
+                <button class="locale-button btn-loc11" data-locale="Loc. 11: Ufficio" onclick="openLocalSettings(11)"></button>
+                <button class="locale-button btn-loc13" data-locale="Loc. 13: Corridoio" onclick="openLocalSettings(13)"></button>
+                <button class="locale-button btn-sala-convegno" data-locale="Sala Convegni" onclick="openLocalSettings(30)"></button>
+                <button class="locale-button btn-loc19" data-locale="Loc. 19: Ufficio" onclick="openLocalSettings(19)"></button>
+                <button class="locale-button btn-loc20" data-locale="Loc. 20: Ufficio" onclick="openLocalSettings(20)"></button>
+                <button class="locale-button btn-loc21" data-locale="Loc. 21: Conferenza" onclick="openLocalSettings(21)"></button>
+                <button class="locale-button btn-loc22" data-locale="Loc. 22: Aula Didattica H.T." onclick="openLocalSettings(22)"></button>
+            </div>
+        </div>
+
+        <!-- Barra di stato inferiore -->
+        <div class="status-bar">
+            <div class="connection-status">
+                <span class="status-indicator" id="connectionIndicator"></span>
+                <span id="connectionStatus">Disconnesso</span>
+                <span id="plcAddress">PLC: 10.39.3.31</span>
+            </div>
+            <div class="datetime-display">
+                <span id="currentDate">Dom, 20 lug 2025</span>
+                <span id="currentTime">00:00:00</span>
+            </div>
+        </div>
+
+        <!-- Diagnostica Modbus -->
+        <div class="diagnostics">
+            <h4>Diagnostica Modbus</h4>
+            <div class="diagnostic-item">
+                <span>Stato:</span>
+                <span class="diagnostic-value" id="diagStatus">-</span>
+            </div>
+            <div class="diagnostic-item">
+                <span>Latenza:</span>
+                <span class="diagnostic-value" id="diagLatency">- ms</span>
+            </div>
+            <div class="diagnostic-item">
+                <span>Errori:</span>
+                <span class="diagnostic-value" id="diagErrors">0</span>
+            </div>
+            <div class="diagnostic-item">
+                <span>Ultimo aggiornamento:</span>
+                <span class="diagnostic-value" id="diagLastUpdate">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog Informazioni Moderno -->
+    <div id="infoModal" class="info-modal">
+        <div class="info-dialog">
+            <div class="info-header">
+                <button class="info-close" onclick="closeInfo()">×</button>
+                <div class="info-logo">🏢</div>
+                <div class="info-title">ASTEC</div>
+                <div class="info-subtitle">Sistema di Controllo Condizionamento</div>
+            </div>
+            
+            <div class="info-body">
+                <div class="info-version">
+                    <div class="version-text">Versione Software</div>
+                    <div class="version-number">v2.1.0</div>
+                </div>
+
+                <div class="info-section">
+                    <h3>🗓️ Date Importanti</h3>
+                    <p><strong>Prima versione:</strong> 8 luglio 2011</p>
+                    <p><strong>Ultimo aggiornamento:</strong> 7 gennaio 2025</p>
+                </div>
+
+                <div class="info-section">
+                    <h3>🔧 Sviluppatore</h3>
+                    <div class="info-contact">
+                        <div class="contact-item">
+                            <span class="contact-icon">👨‍💻</span>
+                            <span><strong>RIMO di Marin Riccardo</strong></span>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📍</span>
+                            <span>via Livenza, 1 - 36065 MUSSOLENTE (VI)</span>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📧</span>
+                            <span>riccardo.marin@rimo64.net</span>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📱</span>
+                            <span>+39 348 353 9416</span>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">☎️</span>
+                            <span>+39 0424 577 123</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3>⚙️ Sistema</h3>
+                    <p>Controllo avanzato per impianti di condizionamento con interfaccia web moderna e comunicazione Modbus TCP/IP.</p>
+                </div>
+            </div>
+
+            <div class="info-footer">
+                <button onclick="closeInfo()">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog Temporizzatore (Opzioni Locale) -->
+    <div id="temporizzatoreModal" class="modal">
+        <div class="modal-content temporizzatore-dialog">
+            <div class="dialog-header">
+                <span id="temporizzatoreTitolo">Locale</span>
+            </div>
+            <div class="dialog-body">
+                <div class="dialog-option checkbox-option">
+                    <input type="checkbox" id="manualeCheckbox">
+                    <label for="manualeCheckbox">Manuale</label>
+                </div>
+                <div class="dialog-option">
+                    <button class="dialog-button" onclick="openOrariDialog()">🕐 Orari</button>
+                </div>
+                <div class="dialog-option">
+                    <button class="dialog-button" onclick="openEscluzioniDialog()">📅 Esclusioni</button>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="dialog-button" onclick="closeTemporizzatore()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog Orari Settimanali -->
+    <div class="modal-overlay" id="orariModalOverlay">
+        <div class="orari-dialog" id="orariDialog">
+            <!-- Header -->
+            <div class="orari-header">
+                <div>
+                    <h2 class="orari-title">Gestione Orari Settimanali</h2>
+                    <div class="locale-info" id="orariLocaleInfo">Locale: - | Offset Modbus: -</div>
+                </div>
+                <button class="close-btn" onclick="closeOrariDialog()">✕</button>
+            </div>
+
+            <!-- Period Tabs -->
+            <div class="period-tabs">
+                <button class="period-tab active" data-period="mattina" onclick="switchPeriod('mattina')">
+                    🌅 Mattina (06:00-12:00)
+                </button>
+                <button class="period-tab" data-period="pomeriggio" onclick="switchPeriod('pomeriggio')">
+                    ☀️ Pomeriggio (12:00-18:00)
+                </button>
+                <button class="period-tab" data-period="sera" onclick="switchPeriod('sera')">
+                    🌙 Sera (18:00-24:00)
+                </button>
+            </div>
+
+            <!-- Period Contents -->
+            <div class="period-content active" id="content-mattina">
+                <div class="days-grid" id="grid-mattina"></div>
+            </div>
+            <div class="period-content" id="content-pomeriggio">
+                <div class="days-grid" id="grid-pomeriggio"></div>
+            </div>
+            <div class="period-content" id="content-sera">
+                <div class="days-grid" id="grid-sera"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="dialog-actions">
+                <div class="loading" id="orariLoadingState">
+                    <div class="spinner"></div>
+                    <span>Comunicazione con PLC...</span>
+                </div>
+                <div style="display: flex; gap: 16px; margin-left: auto;">
+                    <button class="btn btn-secondary" onclick="closeOrariDialog()">
+                        ✕ Annulla
+                    </button>
+                    <button class="btn btn-primary" onclick="salvaOrari()">
+                        💾 Salva Orari
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog Calendario Esclusioni -->
+    <div class="dialog-overlay" id="calendarioModalOverlay" style="display: none;">
+        <div class="dialog-container">
+            <!-- Header -->
+            <div class="calendar-dialog-header">
+                <div class="calendar-dialog-title">
+                    🗓️ Calendario Esclusioni
+                    <span class="locale-badge" id="calendarioLocaleName">Locale Test</span>
+                </div>
+                <button class="calendar-close-btn" onclick="closeEscluzioniDialog()">×</button>
+            </div>
+
+            <!-- Body -->
+            <div class="calendar-dialog-body">
+                <!-- Controls Bar -->
+                <div class="controls-bar">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="escludiWeekend()">
+                            🌅 Escludi Weekend
+                        </button>
+                        <button class="preset-btn" onclick="escludiDomeniche()">
+                            ☀️ Solo Domeniche
+                        </button>
+                        <button class="preset-btn" onclick="resetEsclusioni()">
+                            🔄 Reset Tutto
+                        </button>
+                    </div>
+                    <div class="stats-display">
+                        <div class="stat-item">
+                            <div class="stat-dot excluded"></div>
+                            <span id="excludedCount">0</span> esclusi
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-dot weekend"></div>
+                            <span id="weekendCount">104</span> weekend
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year Navigation -->
+                <div class="year-nav">
+                    <button class="year-btn" onclick="changeYear(-1)">←</button>
+                    <div class="year-display" id="currentYear">2025</div>
+                    <button class="year-btn" onclick="changeYear(1)">→</button>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar months will be generated here -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="calendar-dialog-footer">
+                <div class="footer-info">
+                    Modbus Offset: <strong id="modbusOffset">2300</strong> • 
+                    Click sui giorni per escludere/includere
+                </div>
+                <div class="footer-buttons">
+                    <button class="btn btn-secondary" onclick="closeEscluzioniDialog()">
+                        Annulla
+                    </button>
+                    <button class="btn btn-primary" onclick="salvaEsclusioni()">
+                        💾 Salva Esclusioni
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configurazione PLC
+        const PLC_CONFIG = {
+            host: '10.39.3.31',
+            port: 502,
+            refreshInterval: 2000,
+            timeout: 5000
+        };
+
+        // Offset Modbus (dal codice Java)
+        const MODBUS_OFFSETS = {
+            clock: 400,
+            clockSet: 60,
+            backupExecute: 16,
+            locations: {
+                1: { schedule: 1000, manual: 1043, exclusions: 2300 },
+                5: { schedule: 1100, manual: 1143, exclusions: 2350 },
+                7: { schedule: 1200, manual: 1243, exclusions: 2400 },
+                10: { schedule: 1300, manual: 1343, exclusions: 2450 },
+                11: { schedule: 1400, manual: 1443, exclusions: 2500 },
+                13: { schedule: 1500, manual: 1543, exclusions: 2550 },
+                19: { schedule: 1600, manual: 1643, exclusions: 2600 },
+                20: { schedule: 1700, manual: 1743, exclusions: 2650 },
+                21: { schedule: 1800, manual: 1843, exclusions: 2700 },
+                22: { schedule: 1900, manual: 1943, exclusions: 2750 },
+                30: { schedule: 2000, manual: 2043, exclusions: 2800 }
+            },
+            holidays: 2850
+        };
+
+        // Stato dell'applicazione
+        let appState = {
+            connected: false,
+            lastUpdate: null,
+            errors: 0,
+            locations: {},
+            refreshTimer: null,
+            currentLocation: null,
+            scheduleData: {},
+            exclusionData: {}
+        };
+
+        // Nomi dei locali
+        const LOCATION_NAMES = {
+            1: "Loc. 1, 2: Atrio",
+            5: "Loc. 5: Disimpegno", 
+            7: "Loc. 7: Aula Didattica 1",
+            10: "Loc. 10: Aula Didattica 2",
+            11: "Loc. 11: Ufficio",
+            13: "Loc. 13: Corridoio",
+            19: "Loc. 19: Ufficio",
+            20: "Loc. 20: Ufficio",
+            21: "Loc. 21: Conferenza",
+            22: "Loc. 22: Aula Didattica H.T.",
+            30: "Sala Convegni"
+        };
+
+        // ===============================================
+        // MODULO MODBUS TCP - VERSIONE REALE
+        // ===============================================
+
+        class ModbusTCPClient {
+            constructor() {
+                this.config = {
+                    ip: '10.39.3.31',
+                    port: 502,
+                    timeout: 5000,
+                    retryAttempts: 3,
+                    retryDelay: 1000,
+                    reconnectInterval: 10000
+                };
+                
+                this.connection = null;
+                this.isConnected = false;
+                this.lastError = null;
+                this.latency = 0;
+                this.transactionId = 0;
+                this.reconnectTimer = null;
+                
+                this.debug = true;
+            }
+            
+            async connectPLC() {
+                try {
+                    this.log('Tentativo connessione PLC...');
+                    
+                    // In un ambiente reale, qui andrà implementata la connessione TCP/IP vera al PLC
+                    // Per ora manteniamo il placeholder per il Modbus TCP client reale
+                    throw new Error('Modbus TCP client non implementato - richiedere implementazione libreria Modbus');
+                    
+                } catch (error) {
+                    this.lastError = error.message;
+                    this.isConnected = false;
+                    this.log('Errore connessione PLC:', error.message);
+                    this.scheduleReconnect();
+                    return false;
+                }
+            }
+            
+            async readModbusRegisters(offset, count) {
+                if (!this.isConnected) {
+                    throw new Error('PLC non connesso');
+                }
+                
+                const startTime = Date.now();
+                
+                try {
+                    this.log(`Lettura registri: offset=${offset}, count=${count}`);
+                    
+                    // Qui andrà implementata la lettura Modbus reale
+                    throw new Error('Lettura Modbus non implementata - richiedere implementazione libreria');
+                    
+                } catch (error) {
+                    this.latency = Date.now() - startTime;
+                    this.lastError = error.message;
+                    this.log('Errore lettura registri:', error.message);
+                    throw error;
+                }
+            }
+            
+            async writeModbusRegisters(offset, data) {
+                if (!this.isConnected) {
+                    throw new Error('PLC non connesso');
+                }
+                
+                const startTime = Date.now();
+                
+                try {
+                    this.log(`Scrittura registri: offset=${offset}, data=`, data);
+                    
+                    // Qui andrà implementata la scrittura Modbus reale
+                    throw new Error('Scrittura Modbus non implementata - richiedere implementazione libreria');
+                    
+                } catch (error) {
+                    this.latency = Date.now() - startTime;
+                    this.lastError = error.message;
+                    this.log('Errore scrittura registri:', error.message);
+                    throw error;
+                }
+            }
+            
+            async readPLCClock() {
+                try {
+                    const clockData = await this.readModbusRegisters(400, 8);
+                    
+                    const clockInfo = {
+                        year: clockData[0],
+                        month: clockData[1],
+                        dayOfWeek: clockData[2],
+                        day: clockData[3],
+                        hour: clockData[4],
+                        minute: clockData[5],
+                        second: clockData[6],
+                        date: new Date(clockData[0], clockData[1] - 1, clockData[3], 
+                                     clockData[4], clockData[5], clockData[6])
+                    };
+                    
+                    this.log('Orologio PLC letto:', clockInfo);
+                    return clockInfo;
+                } catch (error) {
+                    this.log('Errore lettura orologio PLC:', error.message);
+                    throw error;
+                }
+            }
+            
+            async syncPLCClock() {
+                try {
+                    const now = new Date();
+                    const clockData = [
+                        now.getFullYear(),
+                        now.getMonth() + 1,
+                        now.getDay(),
+                        now.getDate(),
+                        now.getHours(),
+                        now.getMinutes(),
+                        now.getSeconds(),
+                        0
+                    ];
+                    
+                    await this.writeModbusRegisters(60, clockData);
+                    this.log('Orologio PLC sincronizzato:', now);
+                    return true;
+                } catch (error) {
+                    this.log('Errore sincronizzazione orologio:', error.message);
+                    throw error;
+                }
+            }
+            
+            startHeartbeat() {
+                this.heartbeatInterval = setInterval(async () => {
+                    try {
+                        await this.readModbusRegisters(400, 1);
+                    } catch (error) {
+                        this.log('Heartbeat fallito:', error.message);
+                        this.isConnected = false;
+                        this.scheduleReconnect();
+                    }
+                }, 30000);
+            }
+            
+            scheduleReconnect() {
+                if (this.reconnectTimer) return;
+                
+                this.reconnectTimer = setTimeout(async () => {
+                    this.log('Tentativo riconnessione...');
+                    await this.connectPLC();
+                    this.reconnectTimer = null;
+                }, this.config.reconnectInterval);
+            }
+            
+            log(message, ...args) {
+                if (this.debug) {
+                    console.log(`[ModbusTCP] ${message}`, ...args);
+                }
+            }
+        }
+
+        // Istanza globale del client
+        const modbusClient = new ModbusTCPClient();
+
+        // Funzioni compatibili con dashboard esistente
+        async function readModbusData(offset, count) {
+            return await modbusClient.readModbusRegisters(offset, count);
+        }
+
+        async function writeModbusData(offset, data) {
+            return await modbusClient.writeModbusRegisters(offset, data);
+        }
+
+        window.connectPLC = () => modbusClient.connectPLC();
+        window.readPLCClock = () => modbusClient.readPLCClock();
+        window.syncPLCClock = () => modbusClient.syncPLCClock();
+        window.getConnectionStatus = () => ({
+            isConnected: modbusClient.isConnected,
+            ip: modbusClient.config.ip,
+            port: modbusClient.config.port,
+            lastError: modbusClient.lastError,
+            latency: modbusClient.latency
+        });
+
+        // ===============================================
+        // FUNZIONI DIALOG TEMPORIZZATORE (OPZIONI)
+        // ===============================================
+
+        // Funzione principale - apre dialog opzioni (come versione old)
+        function openLocalSettings(locationId) {
+            console.log(`🔧 Apertura dialog opzioni per locale ${locationId}`);
+            appState.currentLocation = locationId;
+            
+            // Imposta il titolo del dialog
+            document.getElementById('temporizzatoreTitolo').textContent = LOCATION_NAMES[locationId];
+            
+            // Carica lo stato attuale del locale
+            loadLocationData(locationId);
+            
+            // Mostra il dialog
+            document.getElementById('temporizzatoreModal').classList.add('show');
+        }
+
+        async function loadLocationData(locationId) {
+            try {
+                // Carica lo stato manuale/automatico
+                const manualData = await readModbusData(MODBUS_OFFSETS.locations[locationId].manual, 1);
+                const isManual = (manualData[0] & 0x0001) === 1;
+                document.getElementById('manualeCheckbox').checked = isManual;
+                
+                // Carica gli orari se non già caricati
+                if (!appState.scheduleData[locationId]) {
+                    const scheduleData = await readModbusData(MODBUS_OFFSETS.locations[locationId].schedule, 43);
+                    appState.scheduleData[locationId] = scheduleData;
+                }
+                
+                // Carica le esclusioni se non già caricate
+                if (!appState.exclusionData[locationId]) {
+                    const exclusionData = await readModbusData(MODBUS_OFFSETS.locations[locationId].exclusions, 24);
+                    appState.exclusionData[locationId] = exclusionData;
+                }
+                
+            } catch (error) {
+                console.error('Errore caricamento dati locale:', error);
+                // Imposta valori predefiniti in caso di errore
+                document.getElementById('manualeCheckbox').checked = false;
+                appState.scheduleData[locationId] = new Array(43).fill(0);
+                appState.exclusionData[locationId] = new Array(24).fill(0);
+                showToast('Errore connessione PLC: ' + error.message, 'error');
+            }
+        }
+
+        function closeTemporizzatore() {
+            // Salva lo stato della checkbox manuale se è cambiato
+            const isManual = document.getElementById('manualeCheckbox').checked;
+            saveManualMode(appState.currentLocation, isManual);
+            
+            document.getElementById('temporizzatoreModal').classList.remove('show');
+            appState.currentLocation = null;
+        }
+
+        async function saveManualMode(locationId, isManual) {
+            try {
+                const value = isManual ? 1 : 0;
+                await writeModbusData(MODBUS_OFFSETS.locations[locationId].manual, [value]);
+                
+                // Esegui backup
+                await writeModbusData(MODBUS_OFFSETS.backupExecute, [1]);
+                
+                console.log(`Modalità manuale ${isManual ? 'attivata' : 'disattivata'} per locale ${locationId}`);
+                
+                // Aggiorna l'interfaccia
+                updateLocationStatus(locationId, isManual);
+                showToast(`Modalità ${isManual ? 'manuale' : 'automatica'} salvata`, 'success');
+                
+            } catch (error) {
+                console.error('Errore salvataggio modalità manuale:', error);
+                showToast('Errore durante il salvataggio: ' + error.message, 'error');
+            }
+        }
+
+        // ===============================================
+        // DIALOG ORARI SETTIMANALI - JAVASCRIPT
+        // ===============================================
+
+        // Variabili globali per dialog orari
+        let currentOrariLocale = '';
+        let currentOrariModbusOffset = 0;
+        let currentOrariLocationId = 1;
+        let currentPeriod = 'mattina';
+        let orariData = {
+            abilitazioni: 0,
+            mattina: [],
+            pomeriggio: [],
+            sera: []
+        };
+
+        const giorni = ['lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi', 'sabato', 'domenica'];
+        const giorniLabel = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+
+        // Apertura dialog orari - chiamata dal pulsante "Orari" nel dialog temporizzatore
+        function openOrariDialog() {
+            if (!appState.currentLocation) {
+                showToast('Errore: nessun locale selezionato', 'error');
+                return;
+            }
+
+            console.log(`📱 Apertura dialog orari per locale ${appState.currentLocation}`);
+            
+            const localeNome = LOCATION_NAMES[appState.currentLocation] || `Locale ${appState.currentLocation}`;
+            const modbusOffset = MODBUS_OFFSETS.locations[appState.currentLocation]?.schedule || 1000;
+            
+            currentOrariLocale = localeNome;
+            currentOrariModbusOffset = modbusOffset;
+            currentOrariLocationId = appState.currentLocation;
+            
+            document.getElementById('orariLocaleInfo').textContent = `Locale: ${localeNome} | Offset Modbus: ${modbusOffset}`;
+            document.getElementById('orariModalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            initializeOrariDialog();
+            showToast('Dialog orari aperto per ' + localeNome, 'success');
+        }
+
+        // Chiusura dialog orari
+        function closeOrariDialog() {
+            console.log(`❌ Chiusura dialog orari`);
+            document.getElementById('orariModalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+            showToast('Dialog orari chiuso', 'info');
+        }
+
+        // Inizializzazione dialog
+        function initializeOrariDialog() {
+            console.log(`🚀 Inizializzazione dialog orari`);
+            createDayCards();
+            loadOrariFromPLC();
+        }
+
+        // Switch tra periodi (mattina/pomeriggio/sera)
+        function switchPeriod(period) {
+            // Aggiorna tab
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+            // Aggiorna contenuto
+            document.querySelectorAll('.period-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`content-${period}`).classList.add('active');
+
+            currentPeriod = period;
+        }
+
+        // Creazione cards per tutti i periodi
+        function createDayCards() {
+            ['mattina', 'pomeriggio', 'sera'].forEach(period => {
+                const grid = document.getElementById(`grid-${period}`);
+                grid.innerHTML = '';
+
+                giorni.forEach((giorno, index) => {
+                    const card = createDayCard(period, giorno, index);
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        // Creazione singola card giorno
+        function createDayCard(period, giorno, dayIndex) {
+            const card = document.createElement('div');
+            card.className = 'day-card';
+            card.id = `card-${period}-${giorno}`;
+
+            card.innerHTML = `
+                <div class="day-header">
+                    <span class="day-name">${giorniLabel[dayIndex]}</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="toggle-input" 
+                               onchange="toggleDay('${period}', '${giorno}')"
+                               id="toggle-${period}-${giorno}">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="time-inputs">
+                    <div class="time-group">
+                        <label class="time-label">Inizio</label>
+                        <input type="time" class="time-input" 
+                               id="start-${period}-${giorno}"
+                               onchange="updateTime('${period}', '${giorno}')">
+                    </div>
+                    <div class="time-group">
+                        <label class="time-label">Fine</label>
+                        <input type="time" class="time-input" 
+                               id="end-${period}-${giorno}"
+                               onchange="updateTime('${period}', '${giorno}')">
+                    </div>
+                </div>
+                <div class="copy-controls">
+                    <button class="copy-btn" onclick="copiaOrari('${giorno}', 'prev')" 
+                            ${dayIndex === 0 ? 'disabled' : ''}>
+                        📋 Copia da ieri
+                    </button>
+                    <button class="copy-btn" onclick="copiaOrari('${giorno}', 'all')">
+                        📋 Copia a tutti
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Toggle abilitazione giorno
+        function toggleDay(period, giorno) {
+            const card = document.getElementById(`card-${period}-${giorno}`);
+            const toggle = document.getElementById(`toggle-${period}-${giorno}`);
+            const startInput = document.getElementById(`start-${period}-${giorno}`);
+            const endInput = document.getElementById(`end-${period}-${giorno}`);
+
+            if (toggle.checked) {
+                card.classList.add('enabled');
+                startInput.disabled = false;
+                endInput.disabled = false;
+                
+                // Imposta orari di default se vuoti
+                if (!startInput.value || !endInput.value) {
+                    const defaultTimes = getDefaultTimes(period);
+                    startInput.value = defaultTimes.start;
+                    endInput.value = defaultTimes.end;
+                }
+            } else {
+                card.classList.remove('enabled');
+                startInput.disabled = true;
+                endInput.disabled = true;
+                startInput.value = '';
+                endInput.value = '';
+            }
+
+            updateAbilitazioni();
+        }
+
+        // Orari di default per periodo
+        function getDefaultTimes(period) {
+            const defaults = {
+                mattina: { start: '08:00', end: '12:00' },
+                pomeriggio: { start: '13:00', end: '17:00' },
+                sera: { start: '18:00', end: '22:00' }
+            };
+            
+            return defaults[period] || { start: '08:00', end: '17:00' };
+        }
+
+        // Validazione orari
+        function updateTime(period, giorno) {
+            const startInput = document.getElementById(`start-${period}-${giorno}`);
+            const endInput = document.getElementById(`end-${period}-${giorno}`);
+
+            if (startInput.value && endInput.value) {
+                if (startInput.value >= endInput.value) {
+                    showToast('Orario di fine deve essere successivo a quello di inizio', 'error');
+                    endInput.value = '';
+                    return;
+                }
+            }
+        }
+
+        // Copia orari tra giorni
+        function copiaOrari(giornoDestinazione, type) {
+            const dayIndex = giorni.indexOf(giornoDestinazione);
+            
+            if (type === 'prev' && dayIndex > 0) {
+                const giornoOrigine = giorni[dayIndex - 1];
+                copyDaySchedule(giornoOrigine, giornoDestinazione);
+                showToast(`Orari copiati da ${giorniLabel[dayIndex - 1]} a ${giorniLabel[dayIndex]}`, 'success');
+            } else if (type === 'all') {
+                giorni.forEach(giorno => {
+                    if (giorno !== giornoDestinazione) {
+                        copyDaySchedule(giornoDestinazione, giorno);
+                    }
+                });
+                showToast(`Orari di ${giorniLabel[dayIndex]} copiati a tutti i giorni`, 'success');
+            }
+        }
+
+        // Helper per copiare schedule tra giorni
+        function copyDaySchedule(source, target) {
+            ['mattina', 'pomeriggio', 'sera'].forEach(period => {
+                const sourceToggle = document.getElementById(`toggle-${period}-${source}`);
+                const sourceStart = document.getElementById(`start-${period}-${source}`);
+                const sourceEnd = document.getElementById(`end-${period}-${source}`);
+
+                const targetToggle = document.getElementById(`toggle-${period}-${target}`);
+                const targetStart = document.getElementById(`start-${period}-${target}`);
+                const targetEnd = document.getElementById(`end-${period}-${target}`);
+
+                targetToggle.checked = sourceToggle.checked;
+                targetStart.value = sourceStart.value;
+                targetEnd.value = sourceEnd.value;
+
+                toggleDay(period, target);
+            });
+        }
+
+        // Aggiornamento bitmask abilitazioni
+        function updateAbilitazioni() {
+            // Logica per calcolare le abilitazioni
+        }
+
+        // Caricamento dati dal PLC
+        async function loadOrariFromPLC() {
+            setOrariLoading(true);
+            
+            try {
+                console.log('📥 Caricamento orari dal PLC...');
+                
+                // Carica i 43 registri degli orari dal PLC
+                const scheduleRegisters = await readModbusData(currentOrariModbusOffset, 43);
+                
+                // Parse dei dati
+                parseScheduleData(scheduleRegisters);
+                
+                // Applica all'interfaccia
+                applyDataToUI();
+                
+                showToast('Orari caricati dal PLC', 'success');
+                
+            } catch (error) {
+                console.error('❌ Errore caricamento orari:', error);
+                showToast('Errore caricamento PLC: ' + error.message, 'error');
+                
+                // Carica dati vuoti di default
+                loadDefaultData();
+                applyDataToUI();
+            } finally {
+                setOrariLoading(false);
+            }
+        }
+
+        // Parse dei dati dal PLC
+        function parseScheduleData(registers) {
+            orariData = {
+                abilitazioni: registers[0] || 0,
+                mattina: registers.slice(1, 15),
+                pomeriggio: registers.slice(15, 29),
+                sera: registers.slice(29, 43)
+            };
+        }
+
+        // Dati di default vuoti
+        function loadDefaultData() {
+            orariData = {
+                abilitazioni: 0,
+                mattina: new Array(14).fill(0),
+                pomeriggio: new Array(14).fill(0),
+                sera: new Array(14).fill(0)
+            };
+        }
+
+        // Applicazione dati all'interfaccia
+        function applyDataToUI() {
+            ['mattina', 'pomeriggio', 'sera'].forEach(period => {
+                for (let i = 0; i < 7; i++) {
+                    const giorno = giorni[i];
+                    const startMinutes = orariData[period][i * 2];
+                    const endMinutes = orariData[period][i * 2 + 1];
+                    
+                    if (startMinutes > 0 && endMinutes > 0) {
+                        document.getElementById(`toggle-${period}-${giorno}`).checked = true;
+                        document.getElementById(`start-${period}-${giorno}`).value = minutesToTime(startMinutes);
+                        document.getElementById(`end-${period}-${giorno}`).value = minutesToTime(endMinutes);
+                        toggleDay(period, giorno);
+                    }
+                }
+            });
+        }
+
+        // Raccolta dati dall'interfaccia
+        function collectDataFromUI() {
+            orariData = {
+                abilitazioni: 0,
+                mattina: new Array(14).fill(0),
+                pomeriggio: new Array(14).fill(0),
+                sera: new Array(14).fill(0)
+            };
+
+            ['mattina', 'pomeriggio', 'sera'].forEach(period => {
+                giorni.forEach((giorno, index) => {
+                    const toggle = document.getElementById(`toggle-${period}-${giorno}`);
+                    const startInput = document.getElementById(`start-${period}-${giorno}`);
+                    const endInput = document.getElementById(`end-${period}-${giorno}`);
+
+                    if (toggle.checked && startInput.value && endInput.value) {
+                        const startMinutes = timeToMinutes(startInput.value);
+                        const endMinutes = timeToMinutes(endInput.value);
+                        
+                        orariData[period][index * 2] = startMinutes;
+                        orariData[period][index * 2 + 1] = endMinutes;
+                    }
+                });
+            });
+        }
+
+        // Salvataggio orari nel PLC
+        async function salvaOrari() {
+            setOrariLoading(true);
+            
+            try {
+                console.log('💾 Salvataggio orari nel PLC...');
+                
+                // Raccogli dati dall'interfaccia
+                collectDataFromUI();
+                
+                // Costruisci array di 43 registri
+                const modbusRegisters = buildModbusRegisters();
+                
+                // Scrivi nel PLC
+                await writeModbusData(currentOrariModbusOffset, modbusRegisters);
+                
+                // Esegui backup
+                await writeModbusData(MODBUS_OFFSETS.backupExecute, [1]);
+                
+                showToast('Orari salvati nel PLC', 'success');
+                
+                // Chiudi dialog dopo breve pausa
+                setTimeout(() => {
+                    closeOrariDialog();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('❌ Errore salvataggio orari:', error);
+                showToast('Errore salvataggio PLC: ' + error.message, 'error');
+            } finally {
+                setOrariLoading(false);
+            }
+        }
+
+        // Costruzione array registri Modbus
+        function buildModbusRegisters() {
+            const registers = new Array(43).fill(0);
+            
+            // Registro 0: abilitazioni
+            registers[0] = orariData.abilitazioni;
+            
+            // Registri 1-14: mattina
+            for (let i = 0; i < 14; i++) {
+                registers[1 + i] = orariData.mattina[i];
+            }
+            
+            // Registri 15-28: pomeriggio
+            for (let i = 0; i < 14; i++) {
+                registers[15 + i] = orariData.pomeriggio[i];
+            }
+            
+            // Registri 29-42: sera
+            for (let i = 0; i < 14; i++) {
+                registers[29 + i] = orariData.sera[i];
+            }
+            
+            return registers;
+        }
+
+        // Utility functions
+        function minutesToTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function setOrariLoading(loading) {
+            const loadingEl = document.getElementById('orariLoadingState');
+            const buttons = document.querySelectorAll('#orariDialog .btn');
+            
+            if (loading) {
+                loadingEl.classList.add('active');
+                buttons.forEach(btn => btn.disabled = true);
+            } else {
+                loadingEl.classList.remove('active');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // ===============================================
+        // DIALOG CALENDARIO ESCLUSIONI - JAVASCRIPT
+        // ===============================================
+
+        // Variabili globali per calendario
+        let currentCalendarState = {
+            year: new Date().getFullYear(),
+            locale: '',
+            offset: 0,
+            exclusions: {},
+            isLeapYear: false
+        };
+
+        // Nomi mesi e giorni in italiano
+        const monthNames = [
+            'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+            'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+        ];
+
+        const dayNames = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+
+        // Giorni nei mesi
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        // Funzione di apertura esclusioni dal dialog temporizzatore
+        function openEscluzioniDialog() {
+            if (!appState.currentLocation) {
+                showToast('Errore: nessun locale selezionato', 'error');
+                return;
+            }
+
+            const localeNome = LOCATION_NAMES[appState.currentLocation] || `Locale ${appState.currentLocation}`;
+            const modbusOffset = MODBUS_OFFSETS.locations[appState.currentLocation]?.exclusions || 2300;
+            
+            openCalendarioDialog(localeNome, modbusOffset);
+        }
+
+        // Utility functions per calendario
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        }
+
+        function getDaysInMonth(month, year) {
+            if (month === 1 && isLeapYear(year)) return 29;
+            return daysInMonth[month];
+        }
+
+        function getFirstDayOfMonth(month, year) {
+            const date = new Date(year, month, 1);
+            return (date.getDay() + 6) % 7; // Convert to Monday = 0
+        }
+
+        function isWeekend(month, day, year) {
+            const date = new Date(year, month, day);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+        }
+
+        function isSunday(month, day, year) {
+            const date = new Date(year, month, day);
+            return date.getDay() === 0;
+        }
+
+        function isToday(month, day, year) {
+            const today = new Date();
+            return today.getFullYear() === year && 
+                   today.getMonth() === month && 
+                   today.getDate() === day;
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            // Rimuovi toast esistenti
+            document.querySelectorAll('.toast').forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Dialog management
+        function openCalendarioDialog(localeNome, modbusOffset) {
+            currentCalendarState.locale = localeNome;
+            currentCalendarState.offset = modbusOffset;
+            currentCalendarState.year = new Date().getFullYear();
+            currentCalendarState.exclusions = {};
+            
+            document.getElementById('calendarioLocaleName').textContent = localeNome;
+            document.getElementById('modbusOffset').textContent = modbusOffset;
+            document.getElementById('currentYear').textContent = currentCalendarState.year;
+            
+            // Carica dati dal Modbus
+            loadEscluzioniFromModbus();
+            
+            // Mostra dialog
+            document.getElementById('calendarioModalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            showToast('Dialog calendario aperto per ' + localeNome, 'success');
+        }
+
+        function closeEscluzioniDialog() {
+            document.getElementById('calendarioModalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+            showToast('Dialog calendario chiuso', 'info');
+        }
+
+        // Calendar generation
+        function generateCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            for (let month = 0; month < 12; month++) {
+                const monthCard = createMonthCard(month);
+                grid.appendChild(monthCard);
+            }
+            
+            updateStats();
+        }
+
+        function createMonthCard(month) {
+            const card = document.createElement('div');
+            card.className = 'month-card';
+            
+            const daysCount = getDaysInMonth(month, currentCalendarState.year);
+            const firstDay = getFirstDayOfMonth(month, currentCalendarState.year);
+            
+            // Calcola percentuale esclusioni per progress bar
+            let excludedDays = 0;
+            for (let day = 1; day <= daysCount; day++) {
+                if (isExcluded(month, day)) excludedDays++;
+            }
+            const exclusionPercentage = (excludedDays / daysCount) * 100;
+            
+            card.innerHTML = `
+                <div class="month-header">
+                    <div class="month-name">${monthNames[month]}</div>
+                    <div class="month-progress">
+                        <div class="progress-fill" style="width: ${exclusionPercentage}%"></div>
+                    </div>
+                </div>
+                <div class="days-header">
+                    ${dayNames.map(day => `<div class="day-label">${day}</div>`).join('')}
+                </div>
+                <div class="calendar-days-grid" id="month-${month}">
+                    ${generateMonthDays(month, daysCount, firstDay)}
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function generateMonthDays(month, daysCount, firstDay) {
+            let daysHTML = '';
+            
+            // Celle vuote per giorni prima dell'inizio del mese
+            for (let i = 0; i < firstDay; i++) {
+                daysHTML += '<div class="day-cell empty"></div>';
+            }
+            
+            // Giorni del mese
+            for (let day = 1; day <= daysCount; day++) {
+                const classes = ['day-cell'];
+                
+                if (isWeekend(month, day, currentCalendarState.year)) {
+                    classes.push('weekend');
+                }
+                
+                if (isExcluded(month, day)) {
+                    classes.push('excluded');
+                }
+                
+                if (isToday(month, day, currentCalendarState.year)) {
+                    classes.push('today');
+                }
+                
+                daysHTML += `
+                    <div class="${classes.join(' ')}" 
+                         onclick="toggleGiorno(${month}, ${day})"
+                         data-month="${month}" 
+                         data-day="${day}">
+                        ${day}
+                    </div>
+                `;
+            }
+            
+            return daysHTML;
+        }
+
+        // Exclusion management
+        function isExcluded(month, day) {
+            if (!currentCalendarState.exclusions[month]) return false;
+            return currentCalendarState.exclusions[month].includes(day);
+        }
+
+        function toggleGiorno(month, day) {
+            if (!currentCalendarState.exclusions[month]) {
+                currentCalendarState.exclusions[month] = [];
+            }
+            
+            const index = currentCalendarState.exclusions[month].indexOf(day);
+            if (index > -1) {
+                currentCalendarState.exclusions[month].splice(index, 1);
+            } else {
+                currentCalendarState.exclusions[month].push(day);
+            }
+            
+            // Aggiorna UI
+            const dayCell = document.querySelector(`[data-month="${month}"][data-day="${day}"]`);
+            dayCell.classList.toggle('excluded');
+            
+            updateMonthProgress(month);
+            updateStats();
+        }
+
+        function escludiWeekend() {
+            for (let month = 0; month < 12; month++) {
+                if (!currentCalendarState.exclusions[month]) {
+                    currentCalendarState.exclusions[month] = [];
+                }
+                
+                const daysCount = getDaysInMonth(month, currentCalendarState.year);
+                for (let day = 1; day <= daysCount; day++) {
+                    if (isWeekend(month, day, currentCalendarState.year)) {
+                        if (!currentCalendarState.exclusions[month].includes(day)) {
+                            currentCalendarState.exclusions[month].push(day);
+                        }
+                    }
+                }
+            }
+            
+            generateCalendar();
+            showToast('Weekend esclusi con successo!');
+        }
+
+        function escludiDomeniche() {
+            for (let month = 0; month < 12; month++) {
+                if (!currentCalendarState.exclusions[month]) {
+                    currentCalendarState.exclusions[month] = [];
+                }
+                
+                const daysCount = getDaysInMonth(month, currentCalendarState.year);
+                for (let day = 1; day <= daysCount; day++) {
+                    if (isSunday(month, day, currentCalendarState.year)) {
+                        if (!currentCalendarState.exclusions[month].includes(day)) {
+                            currentCalendarState.exclusions[month].push(day);
+                        }
+                    }
+                }
+            }
+            
+            generateCalendar();
+            showToast('Domeniche escluse con successo!');
+        }
+
+        function resetEsclusioni() {
+            currentCalendarState.exclusions = {};
+            generateCalendar();
+            showToast('Esclusioni azzerate!');
+        }
+
+        function changeYear(delta) {
+            currentCalendarState.year += delta;
+            document.getElementById('currentYear').textContent = currentCalendarState.year;
+            currentCalendarState.exclusions = {}; // Reset esclusioni per nuovo anno
+            generateCalendar();
+        }
+
+        function updateMonthProgress(month) {
+            const daysCount = getDaysInMonth(month, currentCalendarState.year);
+            let excludedDays = 0;
+            
+            if (currentCalendarState.exclusions[month]) {
+                excludedDays = currentCalendarState.exclusions[month].length;
+            }
+            
+            const percentage = (excludedDays / daysCount) * 100;
+            const progressBar = document.querySelector(`#month-${month}`).parentElement.querySelector('.progress-fill');
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+            }
+        }
+
+        function updateStats() {
+            let totalExcluded = 0;
+            let totalWeekends = 0;
+            
+            for (let month = 0; month < 12; month++) {
+                const daysCount = getDaysInMonth(month, currentCalendarState.year);
+                
+                // Conta giorni esclusi
+                if (currentCalendarState.exclusions[month]) {
+                    totalExcluded += currentCalendarState.exclusions[month].length;
+                }
+                
+                // Conta giorni weekend
+                for (let day = 1; day <= daysCount; day++) {
+                    if (isWeekend(month, day, currentCalendarState.year)) {
+                        totalWeekends++;
+                    }
+                }
+            }
+            
+            document.getElementById('excludedCount').textContent = totalExcluded;
+            document.getElementById('weekendCount').textContent = totalWeekends;
+        }
+
+        // Comunicazione Modbus
+        async function loadEscluzioniFromModbus() {
+            try {
+                showToast('Caricamento esclusioni dal PLC...', 'info');
+                
+                console.log('📥 Caricamento esclusioni da offset:', currentCalendarState.offset);
+                
+                // Leggi 24 registri (12 mesi * 2 registri ciascuno)
+                const exclusionRegisters = await readModbusData(currentCalendarState.offset, 24);
+                
+                // Parsing dei dati
+                parseExclusionData(exclusionRegisters);
+                
+                // Aggiorna calendario
+                generateCalendar();
+                showToast('Esclusioni caricate con successo!');
+                
+            } catch (error) {
+                console.error('❌ Errore lettura esclusioni:', error);
+                showToast('Errore lettura PLC: ' + error.message, 'error');
+                
+                // Usa dati vuoti in caso di errore
+                loadDefaultExclusions();
+                generateCalendar();
+            }
+        }
+
+        function parseExclusionData(registers) {
+            currentCalendarState.exclusions = {};
+            
+            // Parse 24 registri (2 per mese)
+            for (let month = 0; month < 12; month++) {
+                const lowReg = registers[month * 2] || 0;
+                const highReg = registers[month * 2 + 1] || 0;
+                const monthBits = (highReg << 16) | lowReg;
+                
+                currentCalendarState.exclusions[month] = [];
+                
+                // Controlla ogni bit per i giorni 1-31
+                for (let day = 1; day <= 31; day++) {
+                    if (monthBits & (1 << (day - 1))) {
+                        // Aggiungi solo se il giorno esiste in questo mese
+                        if (day <= getDaysInMonth(month, currentCalendarState.year)) {
+                            currentCalendarState.exclusions[month].push(day);
+                        }
+                    }
+                }
+            }
+        }
+
+        function loadDefaultExclusions() {
+            // Dati vuoti di default
+            currentCalendarState.exclusions = {};
+        }
+
+        function convertToModbusData() {
+            const registers = new Array(24).fill(0);
+            
+            // Converti esclusioni in array di bit (24 registri)
+            for (let month = 0; month < 12; month++) {
+                let monthBits = 0;
+                
+                if (currentCalendarState.exclusions[month]) {
+                    for (const day of currentCalendarState.exclusions[month]) {
+                        if (day >= 1 && day <= 31) {
+                            monthBits |= (1 << (day - 1));
+                        }
+                    }
+                }
+                
+                registers[month * 2] = monthBits & 0xFFFF;     // Low 16 bits
+                registers[month * 2 + 1] = (monthBits >> 16) & 0xFFFF; // High 16 bits
+            }
+            
+            return registers;
+        }
+
+        async function salvaEsclusioni() {
+            try {
+                const saveBtn = document.querySelector('#calendarioModalOverlay .btn-primary');
+                saveBtn.classList.add('loading');
+                saveBtn.disabled = true;
+                
+                console.log('💾 Salvataggio esclusioni su offset:', currentCalendarState.offset);
+                
+                // Converti esclusioni nel formato Modbus
+                const registers = convertToModbusData();
+                
+                // Scrivi nel PLC
+                await writeModbusData(currentCalendarState.offset, registers);
+                
+                // Esegui backup
+                await writeModbusData(MODBUS_OFFSETS.backupExecute, [1]);
+                
+                showToast('Esclusioni salvate con successo!');
+                
+                // Chiudi dialog dopo breve pausa
+                setTimeout(() => closeEscluzioniDialog(), 1500);
+                
+            } catch (error) {
+                console.error('❌ Errore salvataggio esclusioni:', error);
+                showToast('Errore salvataggio: ' + error.message, 'error');
+            } finally {
+                const saveBtn = document.querySelector('#calendarioModalOverlay .btn-primary');
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+            }
+        }
+
+        // ===============================================
+        // FUNZIONI DASHBOARD PRINCIPALI
+        // ===============================================
+
+        async function initDashboard() {
+            console.log('🚀 Inizializzazione dashboard ASTEC...');
+            
+            // Inizializzazione interfaccia base
+            updateDateTime();
+            
+            // Connessione PLC Modbus
+            try {
+                const connected = await connectPLC();
+                if (connected) {
+                    console.log('✅ PLC connesso con successo');
+                    updateConnectionStatus(true);
+                    startPeriodicRefresh();
+                } else {
+                    console.log('❌ Connessione PLC fallita');
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                console.error('❌ Errore connessione PLC:', error);
+                updateConnectionStatus(false);
+                showToast('Errore connessione PLC: ' + error.message, 'error');
+            }
+            
+            // Avvio cicli di aggiornamento
+            setInterval(updateDateTime, 1000);
+            
+            console.log('🎯 Dashboard ASTEC inizializzata');
+        }
+
+        function updateConnectionStatus(connected) {
+            appState.connected = connected;
+            
+            const indicator = document.getElementById('connectionIndicator');
+            const status = document.getElementById('connectionStatus');
+            
+            if (connected) {
+                indicator.classList.add('connected');
+                status.textContent = 'Connesso';
+            } else {
+                indicator.classList.remove('connected');
+                status.textContent = 'Disconnesso';
+            }
+            
+            updateDiagnostics();
+        }
+
+        function startPeriodicRefresh() {
+            if (appState.refreshTimer) {
+                clearInterval(appState.refreshTimer);
+            }
+            
+            appState.refreshTimer = setInterval(() => {
+                refreshPLCData();
+            }, PLC_CONFIG.refreshInterval);
+        }
+
+        async function refreshPLCData() {
+            if (!appState.connected) {
+                return;
+            }
+
+            try {
+                const status = getConnectionStatus();
+                if (status.isConnected) {
+                    // Lettura orologio PLC
+                    const clock = await readPLCClock();
+                    updatePLCClock([
+                        clock.year, clock.month, clock.dayOfWeek, 
+                        clock.day, clock.hour, clock.minute, clock.second
+                    ]);
+                    
+                    // Aggiorna timestamp
+                    appState.lastUpdate = new Date();
+                    updateDiagnostics();
+                }
+                
+            } catch (error) {
+                console.error('❌ Errore aggiornamento dati:', error);
+                appState.errors++;
+                updateConnectionStatus(false);
+                updateDiagnostics();
+            }
+        }
+
+        function updateDiagnostics() {
+            document.getElementById('diagStatus').textContent = appState.connected ? 'Online' : 'Offline';
+            document.getElementById('diagErrors').textContent = appState.errors;
+            document.getElementById('diagLastUpdate').textContent = 
+                appState.lastUpdate ? appState.lastUpdate.toLocaleTimeString() : '-';
+            
+            const status = getConnectionStatus();
+            if (status.latency > 0) {
+                document.getElementById('diagLatency').textContent = status.latency + ' ms';
+            }
+        }
+
+        function updateLocationStatus(locationId, isManual) {
+            const button = document.querySelector(`[onclick="openLocalSettings(${locationId})"]`);
+            if (button) {
+                button.classList.remove('manual-active', 'auto-active');
+                button.classList.add(isManual ? 'manual-active' : 'auto-active');
+            }
+        }
+
+        function updatePLCClock(clockData) {
+            if (clockData && clockData.length >= 7) {
+                const date = new Date(clockData[0], clockData[1] - 1, clockData[3], 
+                                    clockData[4], clockData[5], clockData[6]);
+                
+                const options = { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = 
+                    date.toLocaleDateString('it-IT', options);
+                document.getElementById('currentTime').textContent = 
+                    date.toLocaleTimeString('it-IT');
+            }
+        }
+
+        function updateDateTime() {
+            // Mostra orario locale quando PLC non connesso
+            if (!appState.connected) {
+                const now = new Date();
+                const options = { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = 
+                    now.toLocaleDateString('it-IT', options);
+                document.getElementById('currentTime').textContent = 
+                    now.toLocaleTimeString('it-IT');
+            }
+        }
+
+        // Funzioni menu
+        function exitApplication() {
+            if (confirm('Vuoi davvero uscire dall\'applicazione?')) {
+                window.close();
+            }
+        }
+
+        async function syncDateTime() {
+            try {
+                await syncPLCClock();
+                console.log('🕐 Data/ora sincronizzata con PLC');
+                
+                showToast('Data e ora sincronizzate con il PLC', 'success');
+                
+                await updatePLCClockDisplay();
+            } catch (error) {
+                console.error('❌ Errore sincronizzazione:', error);
+                showToast('Errore sincronizzazione orologio: ' + error.message, 'error');
+            }
+        }
+
+        // Funzione principale per apertura gestione ferie (ora apre calendario)
+        function openHolidays() {
+            // Determina il locale corrente dalla dashboard
+            const localeNome = getCurrentLocaleName();
+            const modbusOffset = getCurrentExclusionsModbusOffset();
+            
+            openCalendarioDialog(localeNome, modbusOffset);
+        }
+
+        // Helper per ottenere nome locale corrente
+        function getCurrentLocaleName() {
+            if (appState.currentLocation) {
+                return LOCATION_NAMES[appState.currentLocation] || `Locale ${appState.currentLocation}`;
+            }
+            return 'Locale Generale';
+        }
+
+        // Helper per ottenere offset esclusioni Modbus
+        function getCurrentExclusionsModbusOffset() {
+            if (appState.currentLocation) {
+                const offsets = MODBUS_OFFSETS.locations[appState.currentLocation];
+                if (offsets) {
+                    return offsets.exclusions;
+                }
+            }
+            return MODBUS_OFFSETS.holidays; // Default holidays offset
+        }
+
+        function showInfo() {
+            document.getElementById('infoModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeInfo() {
+            document.getElementById('infoModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        async function updatePLCClockDisplay() {
+            try {
+                const clock = await readPLCClock();
+                updatePLCClock([
+                    clock.year, clock.month, clock.dayOfWeek, 
+                    clock.day, clock.hour, clock.minute, clock.second
+                ]);
+            } catch (error) {
+                console.error('❌ Errore aggiornamento display orologio:', error);
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM caricato, inizializzazione dashboard...');
+            
+            initDashboard();
+
+            // Chiusura dialog cliccando sull'overlay - ORARI
+            const orariOverlay = document.getElementById('orariModalOverlay');
+            if (orariOverlay) {
+                orariOverlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeOrariDialog();
+                    }
+                });
+            }
+
+            // Chiusura dialog cliccando sull'overlay - TEMPORIZZATORE
+            const temporizzatoreModal = document.getElementById('temporizzatoreModal');
+            if (temporizzatoreModal) {
+                temporizzatoreModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeTemporizzatore();
+                    }
+                });
+            }
+
+            // Chiusura dialog cliccando sull'overlay - CALENDARIO
+            const calendarioOverlay = document.getElementById('calendarioModalOverlay');
+            if (calendarioOverlay) {
+                calendarioOverlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeEscluzioniDialog();
+                    }
+                });
+            }
+
+            // Chiusura dialog info cliccando sull'overlay
+            document.getElementById('infoModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeInfo();
+                }
+            });
+            
+            // Chiusura con tasto ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (document.getElementById('calendarioModalOverlay')?.classList.contains('active')) {
+                        closeEscluzioniDialog();
+                    } else if (document.getElementById('orariModalOverlay')?.classList.contains('active')) {
+                        closeOrariDialog();
+                    } else if (document.getElementById('temporizzatoreModal')?.classList.contains('show')) {
+                        closeTemporizzatore();
+                    } else if (document.getElementById('infoModal')?.classList.contains('show')) {
+                        closeInfo();
+                    }
+                }
+            });
+        });
+
+        // Touch/swipe support per calendario mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (!document.getElementById('calendarioModalOverlay')?.classList.contains('active')) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Swipe orizzontale per navigazione anni
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+                if (deltaX > 0) {
+                    changeYear(-1); // Swipe right = anno precedente
+                } else {
+                    changeYear(1);  // Swipe left = anno successivo
+                }
+            }
+        });
+
+        // Gestione errori globali
+        window.addEventListener('error', function(event) {
+            console.error('❌ Errore JavaScript:', event.error);
+            appState.errors++;
+            updateDiagnostics();
+        });
+    </script>
+</body>
+</html>
