@@ -266,6 +266,19 @@
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.35);
         }
 
+        /* Nuovo stato: editing attivo */
+        .location-btn.editing-active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+            border: 2px solid #fbbf24;
+            transform: scale(1.05);
+        }
+
+        .location-btn.editing-active:hover,
+        .location-btn.editing-active:active {
+            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.5);
+        }
+
         /* ===================================
            STATUS BAR
            =================================== */
@@ -3058,7 +3071,14 @@ ${status.lastError ? '⚠️ Ultimo Errore: ' + status.lastError : '✅ Nessun e
 
         function openLocalSettings(locationId) {
             console.log(`🔧 Apertura impostazioni locale ${locationId}`);
+            
+            // Reset visual di tutti i pulsanti prima di aprire nuovo locale
+            resetAllLocationButtons();
+            
             appState.currentLocation = locationId;
+            
+            // Evidenzia il pulsante corrente come "in editing"
+            highlightCurrentLocation(locationId);
             
             document.getElementById('dialogTitle').textContent = LOCATION_NAMES[locationId];
             document.getElementById('localeModal').classList.add('show');
@@ -3072,8 +3092,40 @@ ${status.lastError ? '⚠️ Ultimo Errore: ' + status.lastError : '✅ Nessun e
             
             if (appState.currentLocation) {
                 const isManual = document.getElementById('manualToggle').checked;
-                saveManualMode(appState.currentLocation, isManual);
+                
+                // Salva in modo asincrono
+                saveManualMode(appState.currentLocation, isManual).then(() => {
+                    // Reset visual del pulsante dopo salvataggio
+                    resetLocationButton(appState.currentLocation);
+                }).catch(error => {
+                    console.error('Errore salvataggio:', error);
+                    resetLocationButton(appState.currentLocation);
+                });
+                
                 appState.currentLocation = null;
+            }
+        }
+
+        // Nuove funzioni per gestione visual pulsanti
+        function resetAllLocationButtons() {
+            // Rimuovi tutte le classi di stato da tutti i pulsanti
+            document.querySelectorAll('.location-btn').forEach(button => {
+                button.classList.remove('manual-active', 'auto-active', 'editing-active');
+            });
+        }
+
+        function resetLocationButton(locationId) {
+            const button = document.querySelector(`[onclick="openLocalSettings(${locationId})"]`);
+            if (button) {
+                button.classList.remove('manual-active', 'auto-active', 'editing-active');
+            }
+        }
+
+        function highlightCurrentLocation(locationId) {
+            const button = document.querySelector(`[onclick="openLocalSettings(${locationId})"]`);
+            if (button) {
+                // Aggiungi classe temporanea per indicare "in editing"
+                button.classList.add('editing-active');
             }
         }
 
@@ -3105,7 +3157,7 @@ ${status.lastError ? '⚠️ Ultimo Errore: ' + status.lastError : '✅ Nessun e
                 
                 if (!appState.connected) {
                     showToast('PLC disconnesso - impostazione salvata localmente', 'error');
-                    updateLocationStatus(locationId, isManual);
+                    // Non aggiornare visual se PLC disconnesso
                     return;
                 }
                 
@@ -3113,8 +3165,9 @@ ${status.lastError ? '⚠️ Ultimo Errore: ' + status.lastError : '✅ Nessun e
                 await writeModbusData(MODBUS_OFFSETS.locations[locationId].manual, [value]);
                 await writeModbusData(MODBUS_OFFSETS.backupExecute, [1]);
                 
-                updateLocationStatus(locationId, isManual);
                 showToast(`Modalità ${isManual ? 'manuale' : 'automatica'} salvata nel PLC`, 'success');
+                
+                // Non aggiornare più il visual qui - sarà gestito dalla chiusura dialog
                 
             } catch (error) {
                 console.error('Errore salvataggio:', error);
@@ -3122,13 +3175,14 @@ ${status.lastError ? '⚠️ Ultimo Errore: ' + status.lastError : '✅ Nessun e
             }
         }
 
-        function updateLocationStatus(locationId, isManual) {
-            const button = document.querySelector(`[onclick="openLocalSettings(${locationId})"]`);
-            if (button) {
-                button.classList.remove('manual-active', 'auto-active');
-                button.classList.add(isManual ? 'manual-active' : 'auto-active');
-            }
-        }
+        // Rimuovi la vecchia funzione updateLocationStatus dato che non la usiamo più
+        // function updateLocationStatus(locationId, isManual) {
+        //     const button = document.querySelector(`[onclick="openLocalSettings(${locationId})"]`);
+        //     if (button) {
+        //         button.classList.remove('manual-active', 'auto-active');
+        //         button.classList.add(isManual ? 'manual-active' : 'auto-active');
+        //     }
+        // }
 
         function showToast(message, type = 'success') {
             document.querySelectorAll('.toast').forEach(toast => toast.remove());
